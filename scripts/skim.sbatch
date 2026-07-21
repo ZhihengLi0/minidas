@@ -13,7 +13,7 @@ RAW_PREFIX=/path/to/Raw/24260617_063934/24260617_063934_
 OUTPUT=selected.mid.gz
 
 SIF=/projects/standard/yanliusp/shared/singularity_images/cdmsfull_V07-02-00.sif
-PKG=/projects/standard/yanliusp/shared/software/minidas
+PKG=/users/9/li004628/minidas
 
 # The binary is linked against libraries inside the image, so it must
 # run inside it; -B /projects makes data paths visible there.

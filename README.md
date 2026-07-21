@@ -30,7 +30,7 @@ subcommands in a single executable:
 Build (and run) inside a cdmsfull image:
 
 ```sh
-cd /projects/standard/yanliusp/shared/software/minidas
+cd /users/9/li004628/minidas
 singularity exec -B /projects \
     /projects/standard/yanliusp/shared/singularity_images/cdmsfull_V07-02-00.sif make
 ```
