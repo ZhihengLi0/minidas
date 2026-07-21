@@ -2,6 +2,7 @@
 AI_HANDOFF.md
 
 # build artifacts
+minidas
 *.exe
 *.o
 *.so
@@ -11,6 +12,7 @@ build/
 *.root
 *.mid
 *.mid.gz
+*.mid.lz4
 *.csv
 
 # misc

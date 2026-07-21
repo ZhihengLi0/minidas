@@ -1,5 +1,5 @@
-// make_eventlist: apply a loose preselection to a cdmsbats processed RQ
-// ROOT file and write the surviving events to an eventlist CSV.
+// minidas eventlist: apply a loose preselection to a cdmsbats processed
+// RQ ROOT file and write the surviving events to an eventlist CSV.
 //
 // This is a C++ port of the original Filter.ipynb: it reads the parallel
 // trees rqDir/eventTree (EventNumber, EventTime, EventType, and
@@ -11,10 +11,7 @@
 // derived from the Soudan-style numbering EventNumber = 10000*dump + idx
 // that cdmsbats/CDMSIOLIB assigns (see midas_file_reader.cxx).
 //
-// Usage:
-//   make_eventlist.exe -i processed.root -o eventlist.csv
-//                      [--amp-min 4e-6] [--amp-max 9e-6] [--type 1]
-//                      [--zip zip1]
+#include "commands.h"
 
 #include <TFile.h>
 #include <TTree.h>
@@ -29,22 +26,22 @@
 
 namespace {
 
-void usage() {
+int usage() {
     std::cerr <<
-        "Usage: make_eventlist.exe -i <processed.root> -o <eventlist.csv>\n"
+        "Usage: minidas eventlist -i <processed.root> -o <eventlist.csv>\n"
         "         [--amp-min <v>] [--amp-max <v>] [--type <n>] [--zip <name>]\n"
         "Defaults: --amp-min 4e-6 --amp-max 9e-6 --type 1 --zip zip1\n";
-    std::exit(1);
+    return 1;
 }
 
 } // namespace
 
-int main(int argc, char** argv) {
+int run_eventlist(int argc, char** argv) {
     std::string inFile, outFile, zipName = "zip1";
     double ampMin = 4e-6, ampMax = 9e-6;
     int eventType = 1;
 
-    for (int i = 1; i < argc; ++i) {
+    for (int i = 0; i < argc; ++i) {
         const std::string arg = argv[i];
         if      (arg == "-i"        && i + 1 < argc) inFile  = argv[++i];
         else if (arg == "-o"        && i + 1 < argc) outFile = argv[++i];
@@ -52,9 +49,9 @@ int main(int argc, char** argv) {
         else if (arg == "--amp-max" && i + 1 < argc) ampMax  = std::stod(argv[++i]);
         else if (arg == "--type"    && i + 1 < argc) eventType = std::stoi(argv[++i]);
         else if (arg == "--zip"     && i + 1 < argc) zipName = argv[++i];
-        else usage();
+        else return usage();
     }
-    if (inFile.empty() || outFile.empty()) usage();
+    if (inFile.empty() || outFile.empty()) return usage();
 
     TFile* f = TFile::Open(inFile.c_str(), "READ");
     if (!f || f->IsZombie()) {

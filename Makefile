@@ -1,10 +1,9 @@
 ############################################################
-# cdms-rawskim Makefile
+# minidas Makefile
 #
-# Targets:
-#   make skim_raw.exe        - MIDAS skimmer (needs CDMSIOLIB only)
-#   make make_eventlist.exe  - RQ preselection (needs ROOT only)
-#   make / make all          - both
+# Builds the single `minidas` executable (subcommands:
+# eventlist, skim). Build inside a cdmsfull singularity image,
+# which ships both ROOT and CDMSIOLIB.
 #
 # CDMSIOLIB location can be overridden:
 #   make CDMSIOLIB=/path/to/IOLibrary
@@ -25,29 +24,20 @@ CXXFLAGS := -g -O2 -Wall -std=c++17 -fPIC
 ROOTCFLAGS := $(shell root-config --cflags 2>/dev/null)
 ROOTLIBS   := $(shell root-config --libs 2>/dev/null)
 
-# CDMSIOLIB headers pull in ROOT (TXMLNode.h), so both executables need
-# a ROOT environment (cdmsfull singularity image, or module load root).
-define require_root
+SRCS := src/minidas.cxx src/eventlist.cxx src/skim.cxx
+
+all: minidas
+
+minidas: $(SRCS) src/commands.h
 	@if [ -z "$(ROOTCFLAGS)" ]; then \
-	    echo "ERROR: root-config not found - load a ROOT environment"; \
-	    echo "       (e.g. run inside a cdmsfull singularity image)"; \
+	    echo "ERROR: root-config not found - build inside a cdmsfull image"; \
 	    exit 1; \
 	fi
-endef
-
-all: skim_raw.exe make_eventlist.exe
-
-skim_raw.exe: src/skim_raw.cxx
-	$(require_root)
-	$(CXX) $(CXXFLAGS) $(ROOTCFLAGS) -I$(CDMSIOLIB)/include -I$(CDMSIOLIB)/src $< \
+	$(CXX) $(CXXFLAGS) $(ROOTCFLAGS) -I$(CDMSIOLIB)/include -I$(CDMSIOLIB)/src $(SRCS) \
 	    -L$(CDMSIOLIB)/lib -lcdmsio -lz $(ROOTLIBS) -lXMLParser \
 	    -Wl,-rpath,$(CDMSIOLIB)/lib -o $@
 
-make_eventlist.exe: src/make_eventlist.cxx
-	$(require_root)
-	$(CXX) $(CXXFLAGS) $(ROOTCFLAGS) $< $(ROOTLIBS) -o $@
-
 clean:
-	rm -f skim_raw.exe make_eventlist.exe
+	rm -f minidas skim_raw.exe make_eventlist.exe
 
 .PHONY: all clean

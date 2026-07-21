@@ -1,5 +1,5 @@
-// skim_raw: write a "selected raw data" MIDAS file containing only the
-// events listed in an eventlist CSV (produced by make_eventlist).
+// minidas skim: write a "selected raw data" MIDAS file containing only
+// the events listed in an eventlist CSV (from `minidas eventlist`).
 //
 // The eventlist CSV must have a header line and columns starting with:
 //   EventNumber,DumpNumber,...
@@ -10,12 +10,8 @@
 // (see midas_file_reader.cxx), so no numbering convention is hardcoded
 // here. Matching is done per dump, so a numbering overflow in one dump
 // cannot steal events from another dump's list.
-//
-// Usage:
-//   skim_raw.exe -e eventlist.csv -i <raw_prefix> -o out.mid.gz [-q]
-// where <raw_prefix> is the raw series path up to the dump index, e.g.
-//   /path/to/Raw/23231222_074513/23231222_074513_
-// so that dump N is found at <raw_prefix>F000N.mid.gz
+
+#include "commands.h"
 
 #include "midas_file_reader.h"
 #include "midas_file_writer.h"
@@ -34,31 +30,44 @@ using namespace CDMSIOLIB;
 
 namespace {
 
-void usage() {
+int usage() {
     std::cerr <<
-        "Usage: skim_raw.exe -e <eventlist.csv> -i <raw_prefix> -o <output.mid.gz> [-q]\n"
+        "Usage: minidas skim -e <eventlist.csv> -i <raw_prefix> -o <output.mid.gz> [-q]\n"
         "  -e  eventlist CSV (header + EventNumber,DumpNumber,... columns)\n"
         "  -i  raw MIDAS path prefix, dump N is read from <prefix>F%04d.mid.gz\n"
+        "      (or .mid.lz4 / .mid; the suffix is auto-detected)\n"
         "  -o  output MIDAS file\n"
         "  -q  quiet (suppress per-event output)\n";
-    std::exit(1);
+    return 1;
+}
+
+// Compose the raw filename for a dump, trying the known compression
+// suffixes in order and returning the first file that exists.
+std::string findDumpFile(const std::string& prefix, int dumpNo) {
+    std::ostringstream base;
+    base << prefix << "F" << std::setw(4) << std::setfill('0') << dumpNo;
+    for (const char* suffix : {".mid.gz", ".mid.lz4", ".mid"}) {
+        const std::string candidate = base.str() + suffix;
+        if (std::ifstream(candidate).good()) return candidate;
+    }
+    return "";
 }
 
 } // namespace
 
-int main(int argc, char** argv) {
+int run_skim(int argc, char** argv) {
     std::string csvFile, inPrefix, outFile;
     bool verbose = true;
 
-    for (int i = 1; i < argc; ++i) {
+    for (int i = 0; i < argc; ++i) {
         const std::string arg = argv[i];
         if      (arg == "-e" && i + 1 < argc) csvFile  = argv[++i];
         else if (arg == "-i" && i + 1 < argc) inPrefix = argv[++i];
         else if (arg == "-o" && i + 1 < argc) outFile  = argv[++i];
         else if (arg == "-q") verbose = false;
-        else usage();
+        else return usage();
     }
-    if (csvFile.empty() || inPrefix.empty() || outFile.empty()) usage();
+    if (csvFile.empty() || inPrefix.empty() || outFile.empty()) return usage();
 
     // Read the eventlist: global event numbers, grouped by dump.
     size_t nSelected = 0;
@@ -98,10 +107,12 @@ int main(int argc, char** argv) {
     size_t totalWritten = 0;
 
     for (const auto& [dumpNo, keep] : eventsByDump) {
-        std::ostringstream path;
-        path << inPrefix << "F" << std::setw(4) << std::setfill('0')
-             << dumpNo << ".mid.gz";
-        const std::string inFile = path.str();
+        const std::string inFile = findDumpFile(inPrefix, dumpNo);
+        if (inFile.empty()) {
+            std::cerr << "ERROR: no raw file for dump " << dumpNo
+                      << " under prefix " << inPrefix << '\n';
+            return 1;
+        }
         std::cout << ">> Dump " << dumpNo << ": " << inFile
                   << " (" << keep.size() << " target events)\n";
 
