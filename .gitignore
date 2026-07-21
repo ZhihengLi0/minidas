@@ -1,0 +1,18 @@
+# AI handoff doc stays on MSI only - never push to GitHub
+AI_HANDOFF.md
+
+# build artifacts
+*.exe
+*.o
+*.so
+build/
+
+# data files
+*.root
+*.mid
+*.mid.gz
+*.csv
+
+# misc
+*.out
+.ipynb_checkpoints/
