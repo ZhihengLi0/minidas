@@ -10,7 +10,14 @@
 #   make CDMSIOLIB=/path/to/IOLibrary
 ############################################################
 
+# Prefer the CDMSIOLIB shipped inside the cdmsfull singularity image
+# (version-matched to the image's ROOT); fall back to the shared copy on
+# MSI, which needs the matching ROOT loaded and /projects bound (-B).
+ifneq ($(wildcard /opt/cdms/release/lib/libcdmsio.so),)
+CDMSIOLIB ?= /opt/cdms/release
+else
 CDMSIOLIB ?= /projects/standard/yanliusp/shared/analyses/Max/IOLibrary
+endif
 
 CXX      := g++
 CXXFLAGS := -g -O2 -Wall -std=c++17 -fPIC
@@ -32,7 +39,7 @@ all: skim_raw.exe make_eventlist.exe
 
 skim_raw.exe: src/skim_raw.cxx
 	$(require_root)
-	$(CXX) $(CXXFLAGS) $(ROOTCFLAGS) -I$(CDMSIOLIB)/src $< \
+	$(CXX) $(CXXFLAGS) $(ROOTCFLAGS) -I$(CDMSIOLIB)/include -I$(CDMSIOLIB)/src $< \
 	    -L$(CDMSIOLIB)/lib -lcdmsio -lz $(ROOTLIBS) -lXMLParser \
 	    -Wl,-rpath,$(CDMSIOLIB)/lib -o $@
 

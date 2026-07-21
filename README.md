@@ -15,23 +15,27 @@ files (~MB). Both are copied to MSI. This package then:
 
 ## Dependencies
 
-- **CDMSIOLIB** (`libcdmsio.so`): SuperCDMS IOLibrary, on MSI at
-  `/projects/standard/yanliusp/shared/analyses/Max/IOLibrary` (default in
-  the Makefile, override with `make CDMSIOLIB=...`).
-- **ROOT** (only for `make_eventlist.exe`): available inside the
-  `cdmsfull_*.sif` singularity images in
-  `/projects/standard/yanliusp/shared/singularity_images/`.
+- **CDMSIOLIB** (`libcdmsio.so`) and **ROOT**: both are shipped inside the
+  `cdmsfull_*.sif` singularity images
+  (`/projects/standard/yanliusp/shared/singularity_images/` on MSI); the
+  image's CDMSIOLIB lives at `/opt/cdms/release` and is picked up by the
+  Makefile automatically. Outside the image, the Makefile falls back to
+  `/projects/standard/yanliusp/shared/analyses/Max/IOLibrary` (needs a
+  ROOT version matching how that copy was built; override with
+  `make CDMSIOLIB=...`).
 
 ## Build
 
-```sh
-# skimmer (no ROOT needed)
-make skim_raw.exe
+Build (and run) inside a cdmsfull image:
 
-# preselection (inside a ROOT environment, e.g. cdmsfull image)
-singularity exec /projects/standard/yanliusp/shared/singularity_images/cdmsfull_V07-02-00.sif \
-    make make_eventlist.exe
+```sh
+cd /projects/standard/yanliusp/shared/software/cdms-rawskim
+singularity exec -B /projects \
+    /projects/standard/yanliusp/shared/singularity_images/cdmsfull_V07-02-00.sif make
 ```
+
+Note: the container only auto-binds your cwd and home — pass
+`-B /projects` so data and shared software paths are visible inside.
 
 ## Run
 
