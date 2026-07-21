@@ -142,6 +142,13 @@ int run_skim(int argc, char** argv) {
                 if (verbose && readCnt <= 5)
                     std::cout << "   probe: eventNumber=" << ev.eventNumber << '\n';
                 if (keep.count(ev.eventNumber)) {
+                    // Preserve provenance: re-reading the skimmed file
+                    // renumbers events sequentially, so stash the original
+                    // Soudan-style event number and dump number in the
+                    // otherwise-unused (real data) DMC fields. They are
+                    // written in the DMC0 bank and restored on read-back.
+                    ev.SIMRecoilEnergy = static_cast<double>(ev.eventNumber);
+                    ev.SIMSeriesNumber = dumpNo;
                     writer.WriteEvent(ev);
                     ++writeCnt;
                     ++totalWritten;

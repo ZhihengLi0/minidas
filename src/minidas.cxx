@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
             "Commands:\n"
             "  eventlist   preselect events from a processed RQ file\n"
             "  skim        skim raw MIDAS files per an eventlist\n"
+            "  inspect     print per-event metadata (incl. provenance)\n"
             "Run 'minidas <command>' without options for command usage.\n";
         return argc < 2 ? 1 : 0;
     }
@@ -28,6 +29,8 @@ int main(int argc, char** argv) {
         return run_eventlist(argc - 2, argv + 2);
     if (std::strcmp(argv[1], "skim") == 0)
         return run_skim(argc - 2, argv + 2);
+    if (std::strcmp(argv[1], "inspect") == 0)
+        return run_inspect(argc - 2, argv + 2);
 
     std::cerr << "minidas: unknown command '" << argv[1] << "'\n";
     return 1;

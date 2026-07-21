@@ -70,3 +70,15 @@ see `scripts/skim.sbatch`.
 - `legacy/` holds the original prototypes this package was built from
   (`AddSalt.cxx`, `extract_waveform.cpp`, `Filter.ipynb` from
   `software/cdms-waveform`).
+
+## Provenance
+
+Re-reading a skimmed file renumbers events sequentially, so `minidas
+skim` stores each event's original identity in two DMC fields that are
+unused for real data (professor's convention, may change later):
+
+- `SIMRecoilEnergy` = original Soudan-style EventNumber
+- `SIMSeriesNumber` = original DumpNumber
+
+They travel in the DMC0 bank and are restored by CDMSIOLIB on read-back.
+`minidas inspect -i <file> [-n N]` prints them per event.

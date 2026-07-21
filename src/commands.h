@@ -5,5 +5,6 @@
 // subcommand name (argv[0] is the first subcommand argument).
 int run_eventlist(int argc, char** argv);
 int run_skim(int argc, char** argv);
+int run_inspect(int argc, char** argv);
 
 #endif

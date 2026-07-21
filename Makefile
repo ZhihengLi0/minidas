@@ -24,7 +24,7 @@ CXXFLAGS := -g -O2 -Wall -std=c++17 -fPIC
 ROOTCFLAGS := $(shell root-config --cflags 2>/dev/null)
 ROOTLIBS   := $(shell root-config --libs 2>/dev/null)
 
-SRCS := src/minidas.cxx src/eventlist.cxx src/skim.cxx
+SRCS := src/minidas.cxx src/eventlist.cxx src/skim.cxx src/inspect.cxx
 
 all: minidas
 
