@@ -7,10 +7,15 @@
 #SBATCH -A yanliusp
 #SBATCH -o %x_%j.out
 
-# Edit these three paths, then: sbatch skim.sbatch
+# Edit these paths, then: sbatch skim.sbatch
 EVENTLIST=eventlist.csv
 RAW_PREFIX=/path/to/Raw/23231222_074513/23231222_074513_
 OUTPUT=selected.mid.gz
 
-cd /projects/standard/yanliusp/shared/software/cdms-rawskim
-./skim_raw.exe -q -e "$EVENTLIST" -i "$RAW_PREFIX" -o "$OUTPUT"
+SIF=/projects/standard/yanliusp/shared/singularity_images/cdmsfull_V07-02-00.sif
+PKG=/projects/standard/yanliusp/shared/software/cdms-rawskim
+
+# The binaries are linked against libraries inside the image, so they
+# must run inside it; -B /projects makes data paths visible there.
+singularity exec -B /projects "$SIF" \
+    "$PKG/skim_raw.exe" -q -e "$EVENTLIST" -i "$RAW_PREFIX" -o "$OUTPUT"
