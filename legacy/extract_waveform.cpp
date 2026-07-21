@@ -10,7 +10,7 @@ int main() {
     std::string midas_path = "/project/rrg-mdiamond/data/CDMS/CUTE/R37/Raw/23231217_135018";
     std::string csv_path = "filtered_events.csv";
 
-    //open csv，get DumpNumber and EventNumber
+    //open csv, get DumpNumber and EventNumber
     std::ifstream infile(csv_path);
     if (!infile.is_open()) {
         std::cerr << "Failed to open CSV file: " << csv_path << std::endl;
