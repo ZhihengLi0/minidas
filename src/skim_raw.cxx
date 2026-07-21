@@ -3,10 +3,13 @@
 //
 // The eventlist CSV must have a header line and columns starting with:
 //   EventNumber,DumpNumber,...
-// EventNumber is the *global* event number as stored in the processed RQ
-// files. Raw MIDAS dumps store a local event number; the mapping used here
-// (same as the original AddSalt.cxx) is:
-//   global = local + DumpNumber*10000 - 10000
+// EventNumber is the global (Soudan-style) event number as stored in the
+// processed RQ files. Event numbering is delegated to CDMSIOLIB itself:
+// after MidasFileReader::SetDumpNumber(dump), the reader assigns each
+// event the same eventNumber cdmsbats used when producing the RQ file
+// (see midas_file_reader.cxx), so no numbering convention is hardcoded
+// here. Matching is done per dump, so a numbering overflow in one dump
+// cannot steal events from another dump's list.
 //
 // Usage:
 //   skim_raw.exe -e eventlist.csv -i <raw_prefix> -o out.mid.gz [-q]
@@ -58,8 +61,8 @@ int main(int argc, char** argv) {
     if (csvFile.empty() || inPrefix.empty() || outFile.empty()) usage();
 
     // Read the eventlist: global event numbers, grouped by dump.
-    std::unordered_set<uint32_t> keepEvents;
-    std::map<int, std::vector<uint32_t>> eventsByDump;
+    size_t nSelected = 0;
+    std::map<int, std::unordered_set<uint32_t>> eventsByDump;
     {
         std::ifstream fin(csvFile);
         if (!fin) {
@@ -78,15 +81,14 @@ int main(int argc, char** argv) {
             std::getline(ss, tok, ',');
             const int dump = static_cast<int>(std::stod(tok));
 
-            keepEvents.insert(globalNum);
-            eventsByDump[dump].push_back(globalNum);
+            if (eventsByDump[dump].insert(globalNum).second) ++nSelected;
         }
     }
-    if (keepEvents.empty()) {
+    if (nSelected == 0) {
         std::cerr << "No valid events found in " << csvFile << '\n';
         return 1;
     }
-    std::cout << "Eventlist: " << keepEvents.size() << " unique events in "
+    std::cout << "Eventlist: " << nSelected << " unique events in "
               << eventsByDump.size() << " dumps\n";
 
     MidasFileWriter writer;
@@ -95,13 +97,13 @@ int main(int argc, char** argv) {
     bool   odbWritten   = false;
     size_t totalWritten = 0;
 
-    for (const auto& [dumpNo, globals] : eventsByDump) {
+    for (const auto& [dumpNo, keep] : eventsByDump) {
         std::ostringstream path;
         path << inPrefix << "F" << std::setw(4) << std::setfill('0')
              << dumpNo << ".mid.gz";
         const std::string inFile = path.str();
         std::cout << ">> Dump " << dumpNo << ": " << inFile
-                  << " (" << globals.size() << " target events)\n";
+                  << " (" << keep.size() << " target events)\n";
 
         MidasFileReader reader;
         try {
@@ -110,6 +112,9 @@ int main(int argc, char** argv) {
             std::cerr << "ERROR: cannot open " << inFile << '\n';
             return 1;
         }
+        // Have the reader assign the same Soudan-style event numbers
+        // cdmsbats assigned when it produced the RQ file for this dump.
+        reader.SetDumpNumber(dumpNo);
 
         // The ODB (detector/DAQ configuration) is copied once from the
         // first dump so the output is a self-contained MIDAS file.
@@ -123,13 +128,14 @@ int main(int argc, char** argv) {
             while (true) {
                 CDMS_EVENT& ev = reader.GetNextEvent();
                 ++readCnt;
-                const uint32_t global = ev.eventNumber + dumpNo * 10000 - 10000;
-                if (keepEvents.count(global)) {
+                if (verbose && readCnt <= 5)
+                    std::cout << "   probe: eventNumber=" << ev.eventNumber << '\n';
+                if (keep.count(ev.eventNumber)) {
                     writer.WriteEvent(ev);
                     ++writeCnt;
                     ++totalWritten;
                     if (verbose)
-                        std::cout << "   wrote global=" << global << '\n';
+                        std::cout << "   wrote " << ev.eventNumber << '\n';
                 }
             }
         } catch (NoMoreEventsException&) {
@@ -143,9 +149,9 @@ int main(int argc, char** argv) {
     writer.CloseFile();
     std::cout << "Done: wrote " << totalWritten << " events to " << outFile << '\n';
 
-    if (totalWritten != keepEvents.size())
+    if (totalWritten != nSelected)
         std::cout << "WARNING: output events (" << totalWritten
-                  << ") != eventlist events (" << keepEvents.size() << ")\n";
+                  << ") != eventlist events (" << nSelected << ")\n";
 
     return 0;
 }

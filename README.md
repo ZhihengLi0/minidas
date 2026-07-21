@@ -56,10 +56,12 @@ see `scripts/skim.sbatch`.
 
 ## Notes / assumptions
 
-- Global-vs-local event number mapping (inherited from the original
-  `AddSalt.cxx`): `global = local + DumpNumber*10000 - 10000`, i.e.
-  10000 events per dump. If a run uses a different dump size, this must
-  be adapted.
+- Event-number matching does not hardcode any numbering convention:
+  `skim_raw` calls `MidasFileReader::SetDumpNumber(dump)` so CDMSIOLIB
+  assigns each raw event the same Soudan-style number
+  (`10000*dump + index_in_dump`) that cdmsbats assigned when producing
+  the RQ file. Matching is done per dump, so it stays correct even if a
+  dump does not contain exactly 10000 events.
 - `eventTree` and the `zipN` tree in the RQ file are assumed parallel
   (one entry per event, same order).
 - `legacy/` holds the original prototypes this package was built from
